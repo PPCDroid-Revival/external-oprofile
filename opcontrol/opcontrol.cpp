@@ -165,7 +165,7 @@ int do_setup() {
                 strerror(errno));
         return -1;
     }
-    if (system("mount -t oprofilefs nodev "OP_DRIVER_BASE)) {
+    if (system("mount -o nodev -t oprofilefs nodev "OP_DRIVER_BASE)) {
         return -1;
     }
     return 0;
