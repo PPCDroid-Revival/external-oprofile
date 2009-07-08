@@ -76,6 +76,10 @@ struct event_info {
     const char *name;
     const char *explanation;
 } event_info[] = {
+#if defined(__mips__)
+    {-2, "TIMER", 
+     "timer based PC statistics"},
+#else
     {0x00, "IFU_IFETCH_MISS", 
      "number of instruction fetch misses"},
     {0x01, "CYCLES_IFU_MEM_STALL", 
@@ -112,6 +116,7 @@ struct event_info {
      "Times write buffer was drained"},
     {0xff, "CPU_CYCLES", 
      "clock cycles counter"}, 
+#endif
 };
 
 void usage() {
@@ -421,7 +426,11 @@ int main(int argc, char * const argv[])
     }
 
     if (quick) {
+#if defined(__mips__)
+        process_event("TIMER");
+#else
         process_event("CPU_CYCLES");
+#endif
         setup = 1;
     }
 
@@ -492,6 +501,11 @@ int main(int argc, char * const argv[])
                 snprintf(command+strlen(command), 1024 - strlen(command), 
                          ",");
             }
+
+	    if (event_info[event_idx].id < 0 ) {
+		snprintf(command+strlen(command), 1024 - strlen(command), event_info[event_idx].name);
+		continue;
+	    }
             /* Compose name:id:count:unit_mask:kernel:user, something like
              * --events=CYCLES_DATA_STALL:2:0:200000:0:1:1,....
              */
@@ -517,10 +531,12 @@ int main(int argc, char * const argv[])
             }
         }
 
+#if !defined(__mips_)
         /* Disable the unused counters */
         for (i = num_events; i < 3; i++) {
             echo_dev("0", 0, "enabled", i);
         }
+#endif
 
         snprintf(command+strlen(command), 1024 - strlen(command), " %s",
                  vmlinux);
