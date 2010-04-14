@@ -48,6 +48,7 @@ int num_events;
 int start;
 int stop;
 int reset;
+int verbose_daemon;
 
 int selected_events[3];
 int selected_counts[3];
@@ -68,6 +69,7 @@ struct option long_options[] = {
     {"stop", 0, &stop, 1},
     {"shutdown", 0, 0, 'h'},
     {"status", 0, 0, 't'},
+    {"verbose", 0, &verbose_daemon, 1},
     {0, 0, 0, 0},
 };
 
@@ -79,6 +81,9 @@ struct event_info {
 #if defined(__mips__)
     {-2, "TIMER", 
      "timer based PC statistics"},
+#elif defined(__powerpc__)
+    {0x01, "CPU_CLK",
+     "Cycles"},
 #else
     {0x00, "IFU_IFETCH_MISS", 
      "number of instruction fetch misses"},
@@ -138,6 +143,7 @@ void usage() {
            "   --vmlinux=file   vmlinux kernel image\n"
            "   --kernel-range=start,end\n"
            "                    kernel range vma address in hexadecimal\n"
+           "   --verbose-daemon pass --verbose=all to oprofiled\n"
           );
 }
 
@@ -428,6 +434,8 @@ int main(int argc, char * const argv[])
     if (quick) {
 #if defined(__mips__)
         process_event("TIMER");
+#elif defined(__powerpc__)
+        process_event("CPU_CLK");
 #else
         process_event("CPU_CYCLES");
 #endif
@@ -453,6 +461,9 @@ int main(int argc, char * const argv[])
         int i;
 
         strcpy(command, "oprofiled --session-dir="OP_DATA_DIR);
+
+	if (verbose_daemon)
+		strcat(command, " --verbose=all");
 
         /* Since counter #3 can only handle CPU_CYCLES, check and shuffle the 
          * order a bit so that the maximal number of events can be profiled
